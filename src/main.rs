@@ -1,7 +1,7 @@
 use regex::{Captures, Regex};
 use std::fs::File;
 use std::io;
-use std::io::{BufRead, Result};
+use std::io::{BufRead};
 use std::path::Path;
 
 fn main() {
@@ -18,11 +18,11 @@ fn main() {
     }
 }
 
-fn get_package_from_line(line: String) -> Result<Vec<String>> {
+fn get_package_from_line(line: String) -> Result<Vec<String>, io::Error> {
     let re = Regex::new(r"^(sudo\s+)?(pacman|yay)\s+-S (?<packages>.+)$").unwrap();
 
     let Some(captures): Option<Captures> = re.captures(&line) else {
-        return Err(io::Error::new(io::ErrorKind::Other, "Invalid line"));
+        return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid line"));
     };
 
     let li: String = captures["packages"].parse().unwrap();
@@ -31,7 +31,7 @@ fn get_package_from_line(line: String) -> Result<Vec<String>> {
     Ok(packages)
 }
 
-fn read_lines<P>(filename: P) -> Result<io::Lines<io::BufReader<File>>>
+fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
 where
     P: AsRef<Path>,
 {
@@ -42,6 +42,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::ErrorKind;
     #[test]
     fn get_package_from_line_should_return_package() {
         let result = get_package_from_line("sudo pacman -S firefox".to_string()).unwrap();
@@ -58,5 +59,12 @@ mod tests {
         assert_eq!(&result[1], "git");
         assert_eq!(&result[2], "lazygit");
         assert_eq!(result.len(), 4);
+    }
+
+    #[test]
+    fn get_package_from_line_should_return_nothing() {
+        let result = get_package_from_line("sudo pacman -Syu".to_string()).unwrap();
+
+        assert_eq!(Err(io::ErrorKind::InvalidData), Ok(result));
     }
 }
