@@ -20,13 +20,13 @@ fn main() {
 
 fn get_package_from_line(line: String) -> Result<Vec<String>> {
     let re = Regex::new(r"^(sudo\s+)?(pacman|yay)\s+-S (?<packages>.+)$").unwrap();
-    let mut packages: Vec<String> = Vec::new();
 
     let Some(captures): Option<Captures> = re.captures(&line) else {
         return Err(io::Error::new(io::ErrorKind::Other, "Invalid line"));
     };
 
-    packages.push(captures["packages"].parse().unwrap());
+    let li: String = captures["packages"].parse().unwrap();
+    let packages: Vec<String> = li.split_whitespace().map(|w| w.to_string()).collect();
 
     Ok(packages)
 }
@@ -37,4 +37,26 @@ where
 {
     let file = File::open(filename)?;
     Ok(io::BufReader::new(file).lines())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn get_package_from_line_should_return_package() {
+        let result = get_package_from_line("sudo pacman -S firefox".to_string()).unwrap();
+
+        assert_eq!(&result[0], "firefox");
+        assert_eq!(result.len(), 1);
+    }
+
+    #[test]
+    fn get_package_from_line_should_return_package_when_several() {
+        let result =
+            get_package_from_line("sudo pacman -S firefox git lazygit neovim".to_string()).unwrap();
+
+        assert_eq!(&result[1], "git");
+        assert_eq!(&result[2], "lazygit");
+        assert_eq!(result.len(), 4);
+    }
 }
