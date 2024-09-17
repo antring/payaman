@@ -1,7 +1,7 @@
 use regex::{Captures, Regex};
 use std::fs::File;
 use std::io;
-use std::io::{BufRead};
+use std::io::BufRead;
 use std::path::Path;
 
 fn main() {
@@ -63,8 +63,12 @@ mod tests {
 
     #[test]
     fn get_package_from_line_should_return_nothing() {
-        let result = get_package_from_line("sudo pacman -Syu".to_string()).unwrap();
+        let result = get_package_from_line("sudo pacman -Syu".to_string());
 
-        assert_eq!(Err(io::ErrorKind::InvalidData), Ok(result));
+        assert!(result.is_err());
+
+        if let Err(e) = result {
+            assert_eq!(e.kind(), ErrorKind::InvalidData)
+        }
     }
 }
