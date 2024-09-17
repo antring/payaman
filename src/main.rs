@@ -10,7 +10,7 @@ fn main() {
             let line_result = get_package_from_line(line.unwrap());
 
             if let Ok(packages) = line_result {
-                println!("Package: {}", packages.join(""));
+                println!("{}", packages.join("\n"));
             }
         }
     } else {
@@ -19,6 +19,12 @@ fn main() {
 }
 
 fn get_package_from_line(line: String) -> Result<Vec<String>, io::Error> {
+    if line.contains("https") {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "Invalid line, containing url",
+        ));
+    }
     let re = Regex::new(r"^(sudo\s+)?(pacman|yay)\s+-S (?<packages>.+)$").unwrap();
 
     let Some(captures): Option<Captures> = re.captures(&line) else {
